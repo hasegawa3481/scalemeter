@@ -1,0 +1,170 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  margin: 0;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  box-sizing: border-box;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+h1 {
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
+  max-width: 720px;
+}
+.control-group {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 1rem 1.5rem;
+  margin: 0.6rem 0;
+  width: 100%;
+  max-width: 500px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+#startBtn,
+#toggleMetronome {
+  min-width: 160px;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 6px;
+  border: none;
+  background-color: #3498db;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+#startBtn:hover,
+#toggleMetronome:hover {
+  background-color: #2980b9;
+}
+.compact-flex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+#bpm, #metronomeVolume {
+  width: 120px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 0 10px;
+}
+#bpmVolumeWrapper label {
+  font-weight: 600;
+  user-select: none;
+  min-width: 40px;
+  text-align: center;
+  margin-left: 10px;
+}
+#bpmVolumeWrapper label:first-child {
+  margin-left: 0;
+}
+#bpmVal, #volVal {
+  font-weight: 700;
+  color: #34495e;
+  margin-left: 4px;
+}
+#timeSignatureWrapper {
+  justify-content: center;
+  gap: 5px;
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 250px;
+}
+#timeSignatureWrapper label {
+  font-weight: 600;
+  user-select: none;
+  margin-right: 4px;
+}
+input[type="number"].small-input {
+  width: 50px;
+  padding: 4px 6px;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  text-align: center;
+  user-select: text;
+}
+#pitch,
+#doremi,
+#octave,
+#frequency {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 0.6rem;
+  text-align: center;
+  color: #34495e;
+  user-select: none;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #e0e0e0;
+  width: 100%;
+  max-width: 500px;
+  box-sizing: border-box;
+}
+#status {
+  margin-top: 1rem;
+  font-weight: 600;
+  color: #27ae60;
+  min-height: 1.5rem;
+  text-align: center;
+  user-select: none;
+  max-width: 500px;
+  width: 100%;
+}
+#output {
+  margin: 2rem 0 1rem 0;
+  width: 100%;
+  max-width: 600px;
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+footer {
+  position: fixed;
+  bottom: 5px;
+  width: 100%;
+  max-width: 720px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+  user-select: none;
+}
+footer a {
+  color: #555;
+  text-decoration: none;
+}
+footer a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 520px) {
+  #bpmVolumeWrapper {
+    flex-wrap: wrap;
+  }
+  #bpm, #metronomeVolume {
+    width: 100px;
+    margin: 5px auto;
+  }
+}

@@ -1,181 +1,52 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>음계 측정기 1.0</title>
-<style>
-  body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
-  button, input[type=range] { margin: 0.5rem; padding: 0.8rem 1.5rem; font-size: 1rem; }
-  #pitch { font-size: 1.5rem; margin-top: 1rem; font-weight: bold; }
-  #status { margin-top: 1rem; font-weight: bold; color: green; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>음계 측정기 1.1</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@3.0.9/releases/vexflow-min.js"></script>
 </head>
 <body>
-<h1>음계 측정기 1.0</h1>
+  <h1>음계 측정기 1.1</h1>
 
-<button id="startBtn">녹음 시작</button>
+  <div class="control-group">
+    <button id="startBtn">시작</button>
+  </div>
 
-<div>
-  <label for="bpm">BPM 설정: <span id="bpmVal">100</span></label><br/>
-  <input type="range" id="bpm" min="40" max="208" value="100" />
-  <button id="toggleMetronome">메트로놈 켜기</button>
-</div>
+  <div id="bpmVolumeWrapper" class="control-group compact-flex-row">
+    <label for="bpm">BPM <span id="bpmVal">100</span></label>
+    <input type="range" id="bpm" min="40" max="208" value="100" />
+    <label for="metronomeVolume">볼륨 <span id="volVal">50</span>%</label>
+    <input type="range" id="metronomeVolume" min="0" max="100" value="50" />
+  </div>
 
-<div id="pitch">음계: -- | 주파수: -- Hz</div>
-<div id="status">마이크를 시작하려면 녹음 버튼을 눌러주세요.</div>
+  <div class="control-group">
+    <button id="toggleMetronome">메트로놈 켜기</button>
+  </div>
 
-<audio id="metronomeSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+  <div id="timeSignatureWrapper" class="control-group compact-flex-row" style="align-items:center;">
+    <label for="numerator">박자</label>
+    <input type="number" min="1" max="16" id="numerator" class="small-input" value="4" />
+    <span>/</span>
+    <input type="number" min="1" max="32" id="denominator" class="small-input" value="4" />
+  </div>
 
-<script>
-const startBtn = document.getElementById('startBtn');
-const bpmSlider = document.getElementById('bpm');
-const bpmVal = document.getElementById('bpmVal');
-const toggleMetronomeBtn = document.getElementById('toggleMetronome');
-const pitchDiv = document.getElementById('pitch');
-const statusDiv = document.getElementById('status');
-const metronomeSound = document.getElementById('metronomeSound');
+  <div id="pitch">음계: --</div>
+  <div id="doremi">음정: --</div>
+  <div id="octave">옥타브: --</div>
+  <div id="frequency">주파수: -- Hz</div>
 
-let audioContext, analyser, microphone, scriptProcessor;
-let metronomeInterval = null;
-let metronomeOn = false;
+  <div id="status">시작 버튼을 눌러 활성화</div>
 
-let pitchHistory = [];
-const maxHistory = 10;
+  <audio id="metronomeSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
-bpmSlider.oninput = () => {
-  bpmVal.textContent = bpmSlider.value;
-  if (metronomeOn) {
-    stopMetronome();
-    startMetronome();
-  }
-};
+  <div id="output"></div>
 
-function autoCorrelate(buffer, sampleRate) {
-  let SIZE = buffer.length;
-  let MAX_SAMPLES = Math.floor(SIZE / 2);
-  let bestOffset = -1;
-  let bestCorrelation = 0;
-  let rms = 0;
-  let foundGoodCorrelation = false;
-  let correlations = new Array(MAX_SAMPLES);
+  <footer>
+    <a href="https://instagram.com/rei_tuyu" target="_blank">@rei_tuyu - 음계 측정기 1.1</a>
+  </footer>
 
-  for (let i = 0; i < SIZE; i++) {
-    let val = buffer[i];
-    rms += val * val;
-  }
-  rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.01) return -1;
-
-  let lastCorrelation = 1;
-  for (let offset = 0; offset < MAX_SAMPLES; offset++) {
-    let correlation = 0;
-    for (let i = 0; i < MAX_SAMPLES; i++) {
-      correlation += Math.abs(buffer[i] - buffer[i + offset]);
-    }
-    correlation = 1 - (correlation / MAX_SAMPLES);
-    correlations[offset] = correlation;
-
-    if (correlation > 0.9 && correlation > lastCorrelation) {
-      foundGoodCorrelation = true;
-      if (correlation > bestCorrelation) {
-        bestCorrelation = correlation;
-        bestOffset = offset;
-      }
-    } else if (foundGoodCorrelation) {
-      let shift = (correlations[bestOffset + 1] - correlations[bestOffset - 1]) / correlations[bestOffset];
-      return sampleRate / (bestOffset + 8 * shift);
-    }
-    lastCorrelation = correlation;
-  }
-  if (bestCorrelation > 0.01) {
-    return sampleRate / bestOffset;
-  }
-  return -1;
-}
-
-function frequencyToNote(freq) {
-  if (freq === -1) return "--";
-  let noteNum = 12 * (Math.log2(freq / 440)) + 69;
-  let noteIndex = Math.round(noteNum) % 12;
-  let octave = Math.floor(Math.round(noteNum) / 12) - 1;
-  const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  return noteStrings[noteIndex] + octave;
-}
-
-function weightedAverage(arr){
-  let weightSum = 0;
-  let weightedValSum = 0;
-  for(let i=0; i<arr.length; i++){
-    let weight = i + 1;
-    weightSum += weight;
-    weightedValSum += arr[i] * weight;
-  }
-  return weightedValSum / weightSum;
-}
-
-function startMetronome() {
-  let intervalMs = Math.floor(60000 / bpmSlider.value);
-  if (metronomeInterval) clearInterval(metronomeInterval);
-  metronomeInterval = setInterval(() => {
-    metronomeSound.currentTime = 0;
-    metronomeSound.play();
-  }, intervalMs);
-  toggleMetronomeBtn.textContent = "메트로놈 끄기";
-  metronomeOn = true;
-  statusDiv.textContent = `메트로놈 작동 중 (BPM: ${bpmSlider.value})`;
-}
-
-function stopMetronome() {
-  clearInterval(metronomeInterval);
-  metronomeInterval = null;
-  toggleMetronomeBtn.textContent = "메트로놈 켜기";
-  metronomeOn = false;
-  statusDiv.textContent = "메트로놈 정지됨";
-}
-
-toggleMetronomeBtn.onclick = () => {
-  if (metronomeOn) stopMetronome();
-  else startMetronome();
-}
-
-startBtn.onclick = async () => {
-  try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    microphone = audioContext.createMediaStreamSource(stream);
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = 2048;
-    scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
-
-    microphone.connect(analyser);
-    analyser.connect(scriptProcessor);
-    scriptProcessor.connect(audioContext.destination);
-
-    scriptProcessor.onaudioprocess = () => {
-      let array = new Float32Array(analyser.fftSize);
-      analyser.getFloatTimeDomainData(array);
-      let pitch = autoCorrelate(array, audioContext.sampleRate);
-      if (pitch !== -1) {
-        pitchHistory.push(pitch);
-        if (pitchHistory.length > maxHistory) pitchHistory.shift();
-        let avgPitch = weightedAverage(pitchHistory);
-        pitchDiv.textContent = `음계: ${frequencyToNote(avgPitch)} | 주파수: ${avgPitch.toFixed(2)} Hz`;
-      } else {
-        pitchDiv.textContent = `음계: -- | 주파수: -- Hz`;
-      }
-    };
-
-    statusDiv.textContent = "마이크 활성화 및 음성 분석 시작";
-    startBtn.disabled = true;
-  } catch (err) {
-    statusDiv.textContent = "마이크 권한 거부 또는 오류 발생";
-    console.error(err);
-  }
-};
-</script>
-<footer style="position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 0.8rem; color: #888;">
-<a href="https://instagram.com/rei_tuyu" target="_blank" style="color: #555; text-decoration: none;">@rei_tuyu - 음계 측정기 1.0</a>
-</footer>
+  <script src="script.js"></script>
 </body>
 </html>
